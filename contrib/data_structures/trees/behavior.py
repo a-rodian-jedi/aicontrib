@@ -1,7 +1,8 @@
 import types
+from functools import partial
 
 from contrib.data_structures.exceptions import *
-from contrib.data_structures.general import Node
+from contrib.data_structures.general import BehaviorNode
 
 
 __all__ = (
@@ -12,8 +13,8 @@ __all__ = (
     "Inverter"
 )
 
-class Condition(Node):
-    __slots__ = ("name", "parent", "children", "data", "check", "__weakref__")
+class Condition(BehaviorNode):
+    __slots__ = ("name", "parent", "children", "data", "check")
 
     def __init__(self, name, check):
         self.check = check
@@ -66,26 +67,27 @@ class Condition(Node):
             out.append(result)
             result = None
 
-class Action(Node):
+class Action(BehaviorNode):
     """
     An Action is a node responsible for performing an action. It can only take a function object.
     """
-    __slots__ = ("name", "parent", "children", "data", "func", "__weakref__")
+    __slots__ = ("name", "parent", "children", "data", "func")
 
     def __init__(self, name, func, parent=None, children=None, data=None):
-        if type(func) is not types.FunctionType:
-            raise InvalidAction("Action node must receive a function object")
+        if type(func) not in [types.FunctionType, partial]:
+            raise InvalidAction("Action node must receive a function or partial object")
 
         self.func = func
         super().__init__(name, parent, children, data)
 
     def __call__(self, *args, **kwargs):
+        print("[DEBUG] Doing Action: {}".format(self.name))
         return self.func(*args, **kwargs)
 
     def add_child(self, node):
         raise ActionError("An Action node cannot have children")
 
-class IterNode(Node):
+class IterNode(BehaviorNode):
     __slots__ = ("name", "parent", "children", "data", "current")
 
     def __init__(self, name, parent=None, children=None, data=None):
@@ -120,14 +122,19 @@ class Selector(IterNode):
     A Selector continues processing its children nodes until it reaches a success. If any nodes
     succeeds, the Selector succeeds.
     """
-    __slots__ = ("name", "parent", "children", "data", "current", "__weakref__")
+    __slots__ = ("name", "parent", "children", "data", "current")
 
     def __call__(self):
+        print("[DEBUG] Running Selector: {}".format(self.name))
         for action in self:
+            if len(self._data):
+                print("[DEBUG] Selector has data: {}".format(self._data))
             if True in action:
                 self.current = 0
+                print("[DEBUG] Selector succeeded on {} node: {}".format(action[1].type, action[1].name))
                 return True
 
+        print("[DEBUG] Selector {} failed!".format(self.name))
         return False
 
 class Sequence(IterNode):
@@ -135,7 +142,7 @@ class Sequence(IterNode):
     A Sequence processes its children nodes until it reaches a failure. If any node fails, the
     Sequence fails. If all succeed, the Sequence succeeds.
     """
-    __slots__ = ("name", "parent", "children", "data", "current", "__weakref__")
+    __slots__ = ("name", "parent", "children", "data", "current")
 
     def __call__(self):
         for action in self:
@@ -146,16 +153,11 @@ class Sequence(IterNode):
         
         return True
 
-class Inverter(Node):
+class Inverter(BehaviorNode):
     """
     An Inverter takes a result from another Node and inverts to response. True to False, False to True.
     An Inverter can only have a single child.
     """
-    def __init__(self, name, children, parent=None, data=None):
-        if len(children) != 1:
-            raise InvalidInverter("An Inverter takes exactly one child")
-        
-        super().__init__(name, parent, children, data)
-
     def __call__(self):
+        print("[DEBUG] Inverting result of: {}".format(self.children[0].name))
         return not self.children[0]()

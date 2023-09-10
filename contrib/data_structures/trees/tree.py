@@ -2,8 +2,14 @@ import weakref
 from collections import deque
 
 from contrib.data_structures.exceptions import TreeError
-from contrib.data_structures.general.node import Node
+from contrib.data_structures.general import Node
+from contrib.data_structures.trees.factory import NodeFactory
 
+
+__all__ = (
+    "Tree",
+    "BehaviorTree"
+)
 
 class BaseTree:
     """
@@ -11,29 +17,25 @@ class BaseTree:
     """
     __slots__ = ("name", "root")
 
-    def __init__(self, name, root):
+    def __init__(self, name, root=None):
         self.name = name
-        if issubclass(root.__class__, Node):
+        if root and issubclass(root.__class__, Node):
             self.root = root
-        else:
+        elif root:
             raise TreeError("Root of a Tree must be a Node type")
 
     def __call__(self):
         self.root()
-
-    def add(self):
-        raise NotImplementedError
-
-    def children(self):
-        raise NotImplementedError
 
     @property
     def type(self):
         return self.__class__.__name__
     
 class Tree(BaseTree):
-    def add(self, node):
-        pass
+    pass
 
-    def children(self):
-        pass
+class BehaviorTree(Tree):
+    def create_root(self, cls, **kwargs):
+        self.root = NodeFactory.create_node(cls, **kwargs)
+        # override parent if it was set
+        self.root.parent = None

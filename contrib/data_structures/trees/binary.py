@@ -59,6 +59,7 @@ class BinaryTree:
         func(self.value)
 
     def bfs(self, func):
+        # TODO: change this away from Queue
         queue = Queue()
         queue.put(self)
 
@@ -163,7 +164,7 @@ class BinarySearchTree:
             return True
         
 class LoadedBST(BinarySearchTree):
-    __slots__ = ("value", "left", "right", "_data", "__weakref__")
+    __slots__ = ("value", "left", "right", "_data")
 
     def __init__(self, value, data):
         self.value = value

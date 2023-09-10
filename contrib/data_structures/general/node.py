@@ -1,9 +1,13 @@
 from enum import Enum
 
+from contrib.data_structures.exceptions import NodeError
+from contrib.data_structures.trees.factory import NodeFactory
+
 
 __all__ = (
     "Node",
-    "NgonNode"
+    "NgonNode",
+    "BehaviorNode"
 )
 
 class Node:
@@ -13,7 +17,7 @@ class Node:
     def __init__(self, name, parent=None, data=None):
         self.name = name
         self.parent = parent
-        self._data = data
+        self._data = {}
 
     def __call__(self):
         raise NotImplementedError
@@ -29,13 +33,9 @@ class Node:
             return None
         else:
             return self._data
-    
-    @data.setter
-    def data(self, v1, v2=None):
-        if v2:
-            self._data[v1] = v2
-        else:
-            self._data = v1
+        
+    def update_data(self, key, value):
+        self._data[key] = value
     
     @property
     def type(self):
@@ -82,4 +82,14 @@ class NgonNode(Node):
 
     def has_children(self):
         return len(self.children) > 0
-        
+
+class BehaviorNode(NgonNode):
+    def add_child(self, cls, **kwargs):
+        node = NodeFactory.create_node(cls, **kwargs)
+        node.parent = self
+        self.children.append(node)
+
+        return node
+
+    def add_children(self, nodes):
+        raise AttributeError("add_children is disabled on BehaviorNodes.")
